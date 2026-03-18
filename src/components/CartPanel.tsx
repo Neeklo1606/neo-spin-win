@@ -3,7 +3,7 @@ import { X, Minus, Plus, Trash2, Truck, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
-import { apiService } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const ease = [0.4, 0, 0.2, 1] as const;
