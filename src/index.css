@@ -90,8 +90,8 @@
   }
   .glass-card-hover:hover {
     background: hsla(0, 0%, 100%, 0.08);
-    border-color: hsla(43, 56%, 52%, 0.3);
-    box-shadow: 0 8px 32px 0 rgba(212, 175, 55, 0.15);
+    border-color: hsla(249, 100%, 69%, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(124, 111, 255, 0.15);
   }
 
   .safe-area-bottom {
@@ -99,11 +99,11 @@
   }
 
   .gold-glow {
-    box-shadow: 0 0 20px hsla(43, 56%, 52%, 0.3), 0 0 60px hsla(43, 56%, 52%, 0.1);
+    box-shadow: 0 0 20px hsla(249, 100%, 69%, 0.3), 0 0 60px hsla(249, 100%, 69%, 0.1);
   }
 
   .gold-glow-strong {
-    box-shadow: 0 0 30px hsla(43, 56%, 52%, 0.4), 0 0 80px hsla(43, 56%, 52%, 0.15);
+    box-shadow: 0 0 30px hsla(249, 100%, 69%, 0.4), 0 0 80px hsla(249, 100%, 69%, 0.15);
   }
 
   .text-gradient-gold {
