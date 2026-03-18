@@ -15,7 +15,7 @@ const HeroSection = () => {
       <ParticlesBackground />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
 
-      <div className="container mx-auto px-4 relative z-10 pt-16">
+      <div className="container mx-auto px-6 relative z-10 pt-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
             initial={{ opacity: 0, x: -50 }}
