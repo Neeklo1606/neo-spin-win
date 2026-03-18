@@ -24,7 +24,7 @@ const HeroSection = () => {
             className="text-center lg:text-left"
           >
 
-            <h1 className="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
+            <h1 className="text-4xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
               <span className="text-foreground">Закись азота</span>
               <br />
               <span className="gold-text">N₂O</span>
