@@ -194,8 +194,8 @@ const CartPanel = () => {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             {[
-                              { type: "free" as const, label: "По городу", sub: "Бесплатно", subClass: "text-accent" },
-                              { type: "paid" as const, label: "За город", sub: "от 700 ₽", subClass: "text-muted-foreground" },
+                              { type: "free" as const, label: "По Ростову", sub: "Бесплатно", subClass: "text-accent" },
+                              { type: "paid" as const, label: "За пределами Ростова", sub: "от 500 ₽", subClass: "text-muted-foreground" },
                             ].map((d) => (
                               <motion.button
                                 key={d.type}
