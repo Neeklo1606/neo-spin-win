@@ -189,7 +189,7 @@ const ProductSection = () => {
                       transition={{ duration: 0.3 }}
                       className="flex items-baseline gap-2 flex-wrap"
                     >
-                      <span className="text-3xl md:text-4xl font-bold gold-text inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="text-4xl md:text-5xl font-extrabold gold-text inline-flex items-center gap-1 whitespace-nowrap">
                         <span className="flex-shrink-0">{currentPrice.toLocaleString()}</span>
                         <span className="flex-shrink-0">₽</span>
                       </span>

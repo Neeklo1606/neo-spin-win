@@ -9,6 +9,17 @@ const SiteFooter = () => (
       </div>
       <span>Ростов-на-Дону</span>
       <span>⚠️ 18+ Продажа лицам младше 18 лет запрещена</span>
+      <span className="leading-relaxed">
+        Использовать строго в рамках законодательства РФ
+      </span>
+      <a
+        href="http://www.consultant.ru/document/cons_doc_LAW_372879/"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary/70 hover:text-primary underline transition-colors"
+      >
+        Федеральный закон «Об ограничении оборота закиси азота в РФ» от 29.12.2020 N 472-ФЗ
+      </a>
       <span>© 2025 Все права защищены</span>
     </div>
   </footer>
