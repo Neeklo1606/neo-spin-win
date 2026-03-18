@@ -208,20 +208,20 @@ const ProductSection = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col gap-3 pt-2">
+                <div className="flex flex-col gap-3 pt-2 md:items-start">
                   <Button
                     variant="gold"
-                    size="xl"
+                    size="lg"
                     onClick={handleBuyNow}
-                    className="w-full shadow-lg shadow-primary/20"
+                    className="w-full md:w-auto md:min-w-[240px] shadow-lg shadow-primary/20"
                   >
                     Купить сейчас
                   </Button>
                   <Button
                     variant="goldOutline"
-                    size="xl"
+                    size="lg"
                     onClick={handleAddToCart}
-                    className="w-full flex items-center justify-center gap-2"
+                    className="w-full md:w-auto md:min-w-[240px] flex items-center justify-center gap-2"
                   >
                     <ShoppingCart className="w-5 h-5" />
                     В корзину
