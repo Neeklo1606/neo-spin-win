@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Minus, Plus, Trash2, Truck, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const ease = [0.4, 0, 0.2, 1] as const;
