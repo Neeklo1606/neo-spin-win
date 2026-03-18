@@ -4,87 +4,24 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 const ease = [0.4, 0, 0.2, 1] as const;
 
 const CartPanel = () => {
   const {
-    items, isOpen, closeCart, clearCart,
+    items, isOpen, closeCart,
     updateQuantity, removeItem,
     totalPrice, deliveryType, setDeliveryType,
     promoCode, setPromoCode, discount,
   } = useCart();
-
-  const [showCheckout, setShowCheckout] = useState(false);
-  const [address, setAddress] = useState("");
-  const [telegram, setTelegram] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   const deliveryCost = deliveryType === "paid" ? 500 : 0;
   const finalTotal = totalPrice + deliveryCost - discount;
 
-  const handleOrder = async () => {
-    // Validation
-    if (items.length === 0) {
-      toast.error('Корзина пуста');
-      return;
-    }
-
-    if (!address.trim()) {
-      toast.error('Укажите адрес доставки');
-      return;
-    }
-
-    if (!telegram.trim()) {
-      toast.error('Укажите Telegram для связи');
-      return;
-    }
-
-    // Check if Telegram WebApp is available
-    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
-    if (!initData) {
-      toast.error('Telegram WebApp не доступен. Откройте приложение через Telegram.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Prepare order items
-      const orderItems = items.map(item => ({
-        name: item.name,
-        volume: item.volume,
-        type: item.type,
-        price: item.price,
-        quantity: item.quantity,
-      }));
-
-      // Create order via API (initData will be added by apiService)
-      const result = await apiService.createOrder({
-        items: orderItems,
-        address: address.trim(),
-        deliveryType,
-      });
-
-      if (result && result.success) {
-        toast.success(`Заказ #${result.id} успешно создан!`);
-        
-        // Clear cart and close panel
-        clearCart();
-        setAddress('');
-        setTelegram('');
-        setShowCheckout(false);
-        closeCart();
-      } else {
-        throw new Error('Failed to create order');
-      }
-    } catch (error: any) {
-      console.error('Order creation error:', error);
-      toast.error(error.message || 'Ошибка при создании заказа. Попробуйте еще раз.');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleCheckout = () => {
+    closeCart();
+    navigate("/checkout");
   };
 
   return (
