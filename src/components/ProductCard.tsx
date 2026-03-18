@@ -30,10 +30,6 @@ const ProductCard = ({ image, title, volume, description, price, onBuy, delay = 
         whileHover={{ scale: 1.08, rotate: 1 }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       />
-      <div className="absolute top-4 right-4 flex items-center gap-1.5 glass-card rounded-full px-3 py-1.5">
-        <ShieldCheck className="w-3.5 h-3.5 text-accent" />
-        <span className="text-xs text-accent font-medium">Сертифицирован</span>
-      </div>
     </div>
 
     <div className="p-6">
