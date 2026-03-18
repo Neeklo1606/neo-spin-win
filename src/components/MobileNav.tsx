@@ -50,7 +50,7 @@ const MobileNav = () => {
       transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
       className="fixed bottom-0 left-0 right-0 z-40 md:hidden border-t border-border/50 bg-card/95 backdrop-blur-xl safe-area-bottom"
     >
-      <div className="flex items-center justify-around h-16">
+      <div className="flex items-center justify-around h-14 pb-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -58,12 +58,12 @@ const MobileNav = () => {
               key={tab.id}
               onClick={tab.action}
               whileTap={{ scale: 0.85 }}
-              className={`flex flex-col items-center gap-1 relative px-6 py-2 transition-colors duration-200 ${
+              className={`flex-1 flex flex-col items-center gap-1 relative py-2 transition-colors duration-200 ${
                 isActive ? "text-primary" : "text-muted-foreground"
               }`}
             >
               <div className="relative">
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-6 h-6" />
                 {tab.badge && tab.badge > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
@@ -74,7 +74,7 @@ const MobileNav = () => {
                   </motion.span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-xs font-medium">{tab.label}</span>
               {isActive && (
                 <motion.div
                   layoutId="mobile-tab-indicator"
