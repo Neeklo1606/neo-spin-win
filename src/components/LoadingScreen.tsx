@@ -51,22 +51,11 @@ const LoadingScreen = ({ children }: { children: React.ReactNode }) => {
             <motion.img
               src={logo}
               alt="Logo"
-              className="relative z-10 w-40 h-40 object-contain drop-shadow-2xl"
+              className="relative z-10 w-48 h-48 object-contain drop-shadow-2xl"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
             />
-
-            {/* Brand text */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="relative z-10 mt-4 mb-8"
-            >
-              <span className="text-2xl font-black gold-text tracking-tight">N₂O</span>
-              <span className="text-sm text-muted-foreground ml-2 tracking-widest uppercase">Delivery</span>
-            </motion.div>
 
             {/* Progress bar */}
             <div className="relative z-10 w-48 h-1.5 rounded-full bg-secondary overflow-hidden">

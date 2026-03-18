@@ -32,11 +32,7 @@ const Header = () => {
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="flex items-center gap-2.5 group">
-          <img src={logo} alt="N2O" className="w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110" />
-          <div className="flex flex-col leading-none">
-            <span className="text-sm font-black gold-text tracking-tight">N₂O</span>
-            <span className="text-[8px] text-muted-foreground font-medium tracking-widest uppercase">Delivery</span>
-          </div>
+          <img src={logo} alt="N2O" className="w-12 h-12 object-contain transition-transform duration-300 group-hover:scale-110" />
         </button>
 
         <nav className="hidden md:flex items-center gap-1">
