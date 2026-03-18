@@ -108,13 +108,13 @@ const ProductSection = () => {
                 {/* Volume Selector */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Объём</label>
-                  <div className="flex gap-3 flex-wrap">
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
                     {(["5л", "10л"] as Volume[]).map((volume) => (
                       <motion.button
                         key={volume}
                         onClick={() => setSelectedVolume(volume)}
                         whileTap={{ scale: 0.97 }}
-                        className={`px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 ${
+                        className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-semibold text-sm transition-all duration-300 min-w-[80px] ${
                           selectedVolume === volume
                             ? "gold-gradient text-primary-foreground gold-glow border-2 border-primary"
                             : "bg-secondary/80 text-muted-foreground border-2 border-transparent hover:bg-secondary"
@@ -129,24 +129,24 @@ const ProductSection = () => {
                 {/* Purchase Type Selector */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-foreground">Тип покупки</label>
-                  <div className="glass-card p-1 rounded-lg inline-flex gap-1">
+                  <div className="glass-card p-1 rounded-lg flex w-full sm:w-auto">
                     <ToggleGroup
                       type="single"
                       value={purchaseType}
                       onValueChange={(value) => value && setPurchaseType(value as PurchaseType)}
-                      className="flex gap-1"
+                      className="flex gap-1 w-full"
                     >
                       <ToggleGroupItem
                         value="purchase"
                         aria-label="Покупка"
-                        className={`px-6 py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Покупка
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="exchange"
                         aria-label="Обмен"
-                        className={`px-6 py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        className={`flex-1 sm:flex-none px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
                       >
                         Обмен
                       </ToggleGroupItem>
@@ -190,14 +190,20 @@ const ProductSection = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       transition={{ duration: 0.3 }}
-                      className="flex items-baseline gap-2"
+                      className="flex items-baseline gap-2 flex-wrap"
                     >
-                      <span className="text-3xl md:text-4xl font-bold gold-text">
-                        {currentPrice.toLocaleString()} ₽
+                      <span className="text-3xl md:text-4xl font-bold gold-text inline-flex items-center gap-1 whitespace-nowrap">
+                        <span className="flex-shrink-0">{currentPrice.toLocaleString()}</span>
+                        <span className="flex-shrink-0">₽</span>
                       </span>
                       {quantity > 1 && (
-                        <span className="text-muted-foreground text-sm">
-                          ({(currentPrice * quantity).toLocaleString()} ₽ за {quantity} шт.)
+                        <span className="text-muted-foreground text-sm inline-flex items-center gap-1 whitespace-nowrap">
+                          <span>(</span>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="flex-shrink-0">{(currentPrice * quantity).toLocaleString()}</span>
+                            <span className="flex-shrink-0">₽</span>
+                          </span>
+                          <span>за {quantity} шт.)</span>
                         </span>
                       )}
                     </motion.div>

@@ -1,14 +1,29 @@
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const MobileNav = () => {
   const { toggleCart, totalItems } = useCart();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("home");
 
+  useEffect(() => {
+    if (location.pathname === "/") {
+      setActiveTab("home");
+    } else if (location.pathname === "/profile") {
+      setActiveTab("profile");
+    }
+  }, [location.pathname]);
+
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (location.pathname !== "/") {
+      navigate("/");
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
     setActiveTab("home");
   };
 
@@ -17,10 +32,15 @@ const MobileNav = () => {
     setActiveTab("cart");
   };
 
+  const handleProfile = () => {
+    navigate("/profile");
+    setActiveTab("profile");
+  };
+
   const tabs = [
     { id: "home", icon: Home, label: "Главная", action: scrollToTop },
     { id: "cart", icon: ShoppingCart, label: "Корзина", action: handleCart, badge: totalItems },
-    { id: "profile", icon: User, label: "Профиль", action: () => setActiveTab("profile") },
+    { id: "profile", icon: User, label: "Профиль", action: handleProfile },
   ];
 
   return (

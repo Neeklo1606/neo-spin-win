@@ -3,12 +3,14 @@ import { X, Minus, Plus, Trash2, Truck, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useState } from "react";
+import { apiService } from "@/lib/api";
+import { toast } from "sonner";
 
 const ease = [0.4, 0, 0.2, 1] as const;
 
 const CartPanel = () => {
   const {
-    items, isOpen, closeCart,
+    items, isOpen, closeCart, clearCart,
     updateQuantity, removeItem,
     totalPrice, deliveryType, setDeliveryType,
     promoCode, setPromoCode, discount,
@@ -17,13 +19,77 @@ const CartPanel = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [address, setAddress] = useState("");
   const [telegram, setTelegram] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const deliveryCost = deliveryType === "paid" ? 700 : 0;
+  const deliveryCost = deliveryType === "paid" ? 500 : 0;
   const finalTotal = totalPrice + deliveryCost - discount;
 
-  const handleOrder = () => {
-    const msg = `Новый заказ:\n${items.map(i => `${i.name} (${i.volume}, ${i.type === "exchange" ? "обмен" : "покупка"}) x${i.quantity}`).join("\n")}\nАдрес: ${address}\nТелеграм: ${telegram}\nИтого: ${finalTotal.toLocaleString()} ₽`;
-    window.open(`https://t.me/share?text=${encodeURIComponent(msg)}`, "_blank");
+  // Get telegramId from Telegram WebApp or use mock for development
+  const getTelegramId = (): number => {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+      return (window as any).Telegram.WebApp.initDataUnsafe.user.id;
+    }
+    // Mock for development - in production this should always come from Telegram
+    return 123456789;
+  };
+
+  const handleOrder = async () => {
+    // Validation
+    if (items.length === 0) {
+      toast.error('Корзина пуста');
+      return;
+    }
+
+    if (!address.trim()) {
+      toast.error('Укажите адрес доставки');
+      return;
+    }
+
+    if (!telegram.trim()) {
+      toast.error('Укажите Telegram для связи');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const telegramId = getTelegramId();
+
+      // Prepare order items
+      const orderItems = items.map(item => ({
+        name: item.name,
+        volume: item.volume,
+        type: item.type,
+        price: item.price,
+        quantity: item.quantity,
+      }));
+
+      // Create order via API
+      const result = await apiService.createOrder({
+        telegramId,
+        items: orderItems,
+        address: address.trim(),
+        deliveryType,
+      });
+
+      if (result && result.success) {
+        toast.success(`Заказ #${result.id} успешно создан!`);
+        
+        // Clear cart and close panel
+        clearCart();
+        setAddress('');
+        setTelegram('');
+        setShowCheckout(false);
+        closeCart();
+      } else {
+        throw new Error('Failed to create order');
+      }
+    } catch (error: any) {
+      console.error('Order creation error:', error);
+      toast.error(error.message || 'Ошибка при создании заказа. Попробуйте еще раз.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,7 +164,10 @@ const CartPanel = () => {
                             </motion.button>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="font-bold gold-text text-sm">{(item.price * item.quantity).toLocaleString()} ₽</span>
+                            <span className="font-bold gold-text text-sm inline-flex items-center gap-1 whitespace-nowrap">
+                              <span className="flex-shrink-0">{(item.price * item.quantity).toLocaleString()}</span>
+                              <span className="flex-shrink-0">₽</span>
+                            </span>
                             <motion.button
                               whileTap={{ scale: 0.85 }}
                               onClick={() => removeItem(item.id)}
@@ -154,14 +223,16 @@ const CartPanel = () => {
                             <Tag className="w-4 h-4 text-primary" />
                             <span className="text-sm font-semibold text-foreground">Промокод</span>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex flex-col sm:flex-row gap-2">
                             <input
                               value={promoCode}
                               onChange={(e) => setPromoCode(e.target.value)}
                               placeholder="Введите промокод"
-                              className="flex-1 bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                              className="flex-1 min-w-0 bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
                             />
-                            <Button variant="goldOutline" size="default">Применить</Button>
+                            <Button variant="goldOutline" size="default" className="whitespace-nowrap px-4 sm:px-6 shrink-0">
+                              Применить
+                            </Button>
                           </div>
                         </div>
                       </motion.div>
@@ -205,23 +276,40 @@ const CartPanel = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-muted-foreground">
                     <span>Товары</span>
-                    <span>{totalPrice.toLocaleString()} ₽</span>
+                    <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="flex-shrink-0">{totalPrice.toLocaleString()}</span>
+                      <span className="flex-shrink-0">₽</span>
+                    </span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Доставка</span>
-                    <span className={deliveryCost === 0 ? "text-accent font-medium" : ""}>
-                      {deliveryCost === 0 ? "Бесплатно" : `${deliveryCost.toLocaleString()} ₽`}
+                    <span className={`inline-flex items-center gap-1 whitespace-nowrap ${deliveryCost === 0 ? "text-accent font-medium" : ""}`}>
+                      {deliveryCost === 0 ? (
+                        <span>Бесплатно</span>
+                      ) : (
+                        <>
+                          <span className="flex-shrink-0">{deliveryCost.toLocaleString()}</span>
+                          <span className="flex-shrink-0">₽</span>
+                        </>
+                      )}
                     </span>
                   </div>
                   {discount > 0 && (
                     <div className="flex justify-between text-accent">
                       <span>Скидка</span>
-                      <span>-{discount.toLocaleString()} ₽</span>
+                      <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                        <span>-</span>
+                        <span className="flex-shrink-0">{discount.toLocaleString()}</span>
+                        <span className="flex-shrink-0">₽</span>
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between text-lg font-bold pt-3 border-t border-border/50">
                     <span className="text-foreground">Итого</span>
-                    <span className="gold-text text-xl">{finalTotal.toLocaleString()} ₽</span>
+                    <span className="gold-text text-xl inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="flex-shrink-0">{finalTotal.toLocaleString()}</span>
+                      <span className="flex-shrink-0">₽</span>
+                    </span>
                   </div>
                 </div>
                 {!showCheckout ? (
@@ -240,9 +328,9 @@ const CartPanel = () => {
                       size="xl"
                       className="w-full shadow-lg shadow-primary/25"
                       onClick={handleOrder}
-                      disabled={!address || !telegram}
+                      disabled={!address || !telegram || isSubmitting || items.length === 0}
                     >
-                      Подтвердить заказ
+                      {isSubmitting ? 'Создание заказа...' : 'Подтвердить заказ'}
                     </Button>
                     <Button variant="ghost" size="default" className="w-full text-muted-foreground" onClick={() => setShowCheckout(false)}>
                       Назад
