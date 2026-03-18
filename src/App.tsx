@@ -7,6 +7,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index.tsx";
 import Profile from "./pages/Profile.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Checkout from "./pages/Checkout.tsx";
 import AdminLogin from "./admin/pages/Login.tsx";
 import AdminLayout from "./admin/components/AdminLayout.tsx";
 import ProtectedRoute from "./admin/components/ProtectedRoute.tsx";
