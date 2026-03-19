@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Send, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,31 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import Header from "@/components/Header";
 import MobileNav from "@/components/MobileNav";
+
+const formatPhone = (raw: string): string => {
+  const digits = raw.replace(/\D/g, "");
+  let d = digits;
+  // Normalise leading 8 → 7
+  if (d.startsWith("8") && d.length > 1) d = "7" + d.slice(1);
+  if (!d.startsWith("7") && d.length > 0) d = "7" + d;
+
+  let result = "+7";
+  if (d.length <= 1) return result;
+  const rest = d.slice(1);
+  if (rest.length > 0) result += " (" + rest.slice(0, 3);
+  if (rest.length >= 3) result += ") ";
+  if (rest.length > 3) result += rest.slice(3, 6);
+  if (rest.length > 6) result += "-" + rest.slice(6, 8);
+  if (rest.length > 8) result += "-" + rest.slice(8, 10);
+  return result;
+};
+
+const isPhoneValid = (v: string) => {
+  const digits = v.replace(/\D/g, "");
+  return digits.length === 11 && (digits.startsWith("7") || digits.startsWith("8"));
+};
+
+const tgRegex = /^@[a-zA-Z0-9_]{5,}$/;
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -15,19 +40,35 @@ const Checkout = () => {
 
   const [address, setAddress] = useState("");
   const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
+  const [telegram, setTelegram] = useState("");
+  const [phone, setPhone] = useState("");
+  const [tgTouched, setTgTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
 
-  const canSubmit = address.trim() && name.trim() && contact.trim() && items.length > 0;
+  const tgValid = telegram === "" || tgRegex.test(telegram);
+  const phoneValid = phone === "" || isPhoneValid(phone);
+  const hasValidContact =
+    (telegram !== "" && tgRegex.test(telegram)) ||
+    (phone !== "" && isPhoneValid(phone));
+
+  const canSubmit = address.trim() && name.trim() && hasValidContact && items.length > 0;
+
+  const handlePhoneChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (raw === "" || raw === "+") {
+      setPhone("");
+      return;
+    }
+    const digits = raw.replace(/\D/g, "");
+    if (digits.length <= 11) setPhone(formatPhone(raw));
+  }, []);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
-
-    // Simulate order submission
     await new Promise((r) => setTimeout(r, 1200));
-
     clearCart();
     closeCart();
     setOrderConfirmed(true);
@@ -38,6 +79,9 @@ const Checkout = () => {
     navigate("/");
     return null;
   }
+
+  const inputCls =
+    "w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow";
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
@@ -88,7 +132,7 @@ const Checkout = () => {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="Улица, дом, квартира"
-                    className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                    className={inputCls}
                   />
                 </div>
 
@@ -98,24 +142,43 @@ const Checkout = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Ваше имя"
-                    className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                    className={inputCls}
                   />
                 </div>
 
                 <div className="glass-card rounded-xl p-4 border border-border/30">
-                  <label className="text-sm text-muted-foreground mb-2 block">Телефон или Telegram</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Telegram username</label>
                   <input
-                    value={contact}
-                    onChange={(e) => setContact(e.target.value)}
-                    placeholder="+7... или @username"
-                    className="w-full bg-secondary rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground border-none outline-none focus:ring-2 focus:ring-primary transition-shadow"
+                    value={telegram}
+                    onChange={(e) => setTelegram(e.target.value)}
+                    onBlur={() => setTgTouched(true)}
+                    placeholder="@username"
+                    className={inputCls}
                   />
+                  {tgTouched && telegram !== "" && !tgValid && (
+                    <p className="text-destructive text-xs mt-2">Формат: @username (минимум 5 символов)</p>
+                  )}
+                </div>
+
+                <div className="glass-card rounded-xl p-4 border border-border/30">
+                  <label className="text-sm text-muted-foreground mb-2 block">Телефон</label>
+                  <input
+                    value={phone}
+                    onChange={handlePhoneChange}
+                    onBlur={() => setPhoneTouched(true)}
+                    placeholder="+7 (999) 999-99-99"
+                    inputMode="tel"
+                    className={inputCls}
+                  />
+                  {phoneTouched && phone !== "" && !phoneValid && (
+                    <p className="text-destructive text-xs mt-2">Введите корректный номер</p>
+                  )}
                 </div>
               </div>
 
               <Button
                 variant="gold"
-                size="xl"
+                size="lg"
                 className="w-full shadow-lg shadow-primary/25"
                 onClick={handleSubmit}
                 disabled={!canSubmit || isSubmitting}
@@ -145,7 +208,7 @@ const Checkout = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Button variant="gold" size="xl" className="w-full shadow-lg shadow-primary/25 flex items-center justify-center gap-2">
+                  <Button variant="gold" size="lg" className="w-full shadow-lg shadow-primary/25 flex items-center justify-center gap-2">
                     <Send className="w-4 h-4" />
                     Связаться в Telegram
                   </Button>
