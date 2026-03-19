@@ -42,13 +42,15 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const closeCart = useCallback(() => setIsOpen(false), []);
   const toggleCart = useCallback(() => setIsOpen((p) => !p), []);
 
-  const addItem = useCallback((item: Omit<CartItem, "quantity">) => {
+  const addItem = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+    const qty = item.quantity ?? 1;
+    const { quantity: _ignored, ...rest } = item as any;
     setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const existing = prev.find((i) => i.id === rest.id);
       if (existing) {
-        return prev.map((i) => (i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i));
+        return prev.map((i) => (i.id === rest.id ? { ...i, quantity: i.quantity + qty } : i));
       }
-      return [...prev, { ...item, quantity: 1 }];
+      return [...prev, { ...rest, quantity: qty }];
     });
     setIsOpen(true);
   }, []);
