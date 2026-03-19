@@ -82,7 +82,7 @@ const ProductSection = () => {
                 <motion.img
                   key={selectedVolume}
                   src={currentImage}
-                  alt="Пищевая закись азота"
+                  alt="Закись азота"
                   className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
