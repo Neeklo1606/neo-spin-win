@@ -197,6 +197,14 @@ const CartPanel = () => {
                       </span>
                     </div>
                   )}
+                  {/* Gift block */}
+                  <div className="flex items-start gap-2 py-2 px-3 rounded-lg bg-accent/10 border border-accent/20">
+                    <span className="text-base leading-none mt-0.5">🎁</span>
+                    <div className="text-xs">
+                      <span className="font-semibold text-accent">Подарок к заказу:</span>
+                      <p className="text-muted-foreground mt-0.5">Упаковка шариков + 2 панчбола — бесплатно</p>
+                    </div>
+                  </div>
                   <div className="flex justify-between text-lg font-bold pt-3 border-t border-border/50">
                     <span className="text-foreground">Итого</span>
                     <span className="gold-text text-xl inline-flex items-center gap-1 whitespace-nowrap">
