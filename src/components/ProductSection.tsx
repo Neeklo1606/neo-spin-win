@@ -264,7 +264,7 @@ const ProductSection = () => {
           </TabsContent>
 
           <TabsContent value="accessories">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               {accessories.map((item, i) => (
                 <AccessoryCard key={item.id} item={item} delay={i * 0.08} />
               ))}
