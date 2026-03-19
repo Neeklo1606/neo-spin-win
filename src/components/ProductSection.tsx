@@ -26,26 +26,26 @@ const ProductSection = () => {
 
   const handleBuyNow = () => {
     addItem({
-      id: `${selectedVolume}-${purchaseType}-${Date.now()}`,
+      id: `${selectedVolume}-${purchaseType}`,
       name: "Пищевая закись азота",
       volume: selectedVolume,
       type: purchaseType,
       price: currentPrice,
       image: currentImage,
+      quantity,
     });
   };
 
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addItem({
-        id: `${selectedVolume}-${purchaseType}-${Date.now()}-${i}`,
-        name: "Пищевая закись азота",
-        volume: selectedVolume,
-        type: purchaseType,
-        price: currentPrice,
-        image: currentImage,
-      });
-    }
+    addItem({
+      id: `${selectedVolume}-${purchaseType}`,
+      name: "Пищевая закись азота",
+      volume: selectedVolume,
+      type: purchaseType,
+      price: currentPrice,
+      image: currentImage,
+      quantity,
+    });
   };
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);

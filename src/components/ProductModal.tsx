@@ -40,17 +40,8 @@ const ProductModal = ({ isOpen, onClose }: ProductModalProps) => {
       type: purchaseType,
       price: currentPrice,
       image: selectedVolume.image,
+      quantity,
     });
-    for (let i = 1; i < quantity; i++) {
-      addItem({
-        id: `${selectedVolume.id}-${purchaseType}`,
-        name: `N₂O Баллон ${selectedVolume.label}`,
-        volume: selectedVolume.label,
-        type: purchaseType,
-        price: currentPrice,
-        image: selectedVolume.image,
-      });
-    }
     onClose();
   };
 
