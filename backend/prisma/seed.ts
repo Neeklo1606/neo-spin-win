@@ -36,7 +36,7 @@ async function main() {
   if (existingProducts === 0) {
     await prisma.product.create({
       data: {
-        name: 'Пищевая закись азота',
+        name: 'Закись азота',
         description: 'Высококачественный продукт для профессионального использования',
         price5l: 3500,
         price10l: 5500,
