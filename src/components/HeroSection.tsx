@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import ParticlesBackground from "./ParticlesBackground";
-import heroCylinder from "@/assets/hero-cylinder.png";
+import BubblesBackground from "./BubblesBackground";
+import heroLogo from "@/assets/logobalonc.png";
 
 const ease = [0.4, 0, 0.2, 1] as const;
 
@@ -12,7 +12,7 @@ const HeroSection = () => {
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      <ParticlesBackground />
+      <BubblesBackground />
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none" />
 
       <div className="container mx-auto px-6 relative z-10 pt-16">
@@ -38,7 +38,7 @@ const HeroSection = () => {
               Доставка за <span className="text-foreground font-semibold">30–60 минут</span>
             </p>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto lg:mx-0 leading-relaxed">
-              Премиальное качество. Сертифицированный продукт. Быстрая и надёжная доставка по городу.
+              Быстрая и надёжная доставка по городу и области. Поддержка 24/7
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -80,9 +80,9 @@ const HeroSection = () => {
               <div className="w-72 h-72 md:w-80 md:h-80 rounded-full gold-gradient opacity-[0.08] blur-3xl animate-pulse-glow" />
             </div>
             <motion.img
-              src={heroCylinder}
+              src={heroLogo}
               alt="N2O баллон"
-              className="relative z-10 w-56 md:w-72 lg:w-80 animate-float-gentle drop-shadow-2xl"
+              className="relative z-10 w-64 md:w-80 lg:w-96 animate-float-gentle drop-shadow-2xl"
               loading="eager"
             />
           </motion.div>
