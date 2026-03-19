@@ -44,11 +44,6 @@ const ProductModal = ({ isOpen, onClose }: ProductModalProps) => {
     });
     onClose();
   };
-        image: selectedVolume.image,
-      });
-    }
-    onClose();
-  };
 
   return (
     <AnimatePresence>
