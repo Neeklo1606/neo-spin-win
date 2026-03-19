@@ -95,7 +95,7 @@ const ProductSection = () => {
                 {/* Title and Description */}
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                    Пищевая закись азота
+                    Закись азота
                   </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Высококачественный продукт для профессионального использования
