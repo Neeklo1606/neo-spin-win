@@ -1,0 +1,24 @@
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.12;
+  }
+  80% {
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateY(-110vh) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.bubble {
+  position: fixed;
+  bottom: -80px;
+  z-index: -1;
+  border-radius: 50%;
+  background: hsl(263 86% 30%);
+  opacity: 0.12;
+  animation: floatUp linear infinite;
+  pointer-events: none;
+}
