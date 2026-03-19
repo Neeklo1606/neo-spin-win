@@ -27,7 +27,7 @@ const ProductSection = () => {
   const handleBuyNow = () => {
     addItem({
       id: `${selectedVolume}-${purchaseType}`,
-      name: "Пищевая закись азота",
+      name: "Закись азота",
       volume: selectedVolume,
       type: purchaseType,
       price: currentPrice,
