@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { m as motion } from 'framer-motion';
 import { User, MapPin, Package, Phone, Send, Plus, Trash2 } from 'lucide-react';
 import { apiService, type User as UserType, type Order, type Address } from '@/lib/api';
 import { Button } from '@/components/ui/button';

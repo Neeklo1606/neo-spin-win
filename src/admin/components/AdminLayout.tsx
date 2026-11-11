@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
 import { 
       LayoutDashboard, 
       ShoppingCart, 
@@ -77,6 +78,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       {/* Main Content */}
       <main className="flex-1 p-8 overflow-auto">
         {children}
+        <Toaster />
       </main>
     </div>
   );

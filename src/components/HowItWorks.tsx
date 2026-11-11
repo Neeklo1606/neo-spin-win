@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { ShoppingCart, ClipboardCheck, Truck } from "lucide-react";
 import { useContent } from "@/hooks/useContent";
 

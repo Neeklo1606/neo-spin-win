@@ -1,14 +1,14 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { LazyMotion } from "framer-motion";
 import { CartProvider } from "@/contexts/CartContext";
 import { lazy, Suspense } from "react";
 import Index from "./pages/Index.tsx";
-const Profile = lazy(() => import("./pages/Profile.tsx"));
+
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const Checkout = lazy(() => import("./pages/Checkout.tsx"));
+const loadCheckout = () => import("./pages/Checkout.tsx");
+const loadProfile = () => import("./pages/Profile.tsx");
+const Checkout = lazy(loadCheckout);
+const Profile = lazy(loadProfile);
 const AdminLogin = lazy(() => import("./admin/pages/Login.tsx"));
 const AdminLayout = lazy(() => import("./admin/components/AdminLayout.tsx"));
 const ProtectedRoute = lazy(() => import("./admin/components/ProtectedRoute.tsx"));
@@ -21,14 +21,22 @@ const AdminBotSettings = lazy(() => import("./admin/pages/BotSettings.tsx"));
 const AdminContent = lazy(() => import("./admin/pages/Content.tsx"));
 const AdminDocs = lazy(() => import("./admin/pages/AdminDocs.tsx"));
 
-const queryClient = new QueryClient();
+// Warm up customer pages once the home page is idle, so cart → checkout is instant.
+if (typeof window !== "undefined") {
+  const warm = () => {
+    loadCheckout();
+    loadProfile();
+  };
+  const ric = (window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+  if (ric) ric(warm, { timeout: 4000 });
+  else setTimeout(warm, 2500);
+}
+
+const loadMotionFeatures = () => import("@/lib/motion-features").then((mod) => mod.default);
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+  <LazyMotion features={loadMotionFeatures}>
       <CartProvider>
-        <Toaster />
-        <Sonner />
         <BrowserRouter>
           <Suspense fallback={null}>
           <Routes>
@@ -128,8 +136,7 @@ const App = () => (
           </Suspense>
         </BrowserRouter>
       </CartProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  </LazyMotion>
 );
 
 export default App;

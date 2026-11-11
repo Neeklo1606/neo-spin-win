@@ -1,6 +1,6 @@
 import { Home, ShoppingCart, User } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 

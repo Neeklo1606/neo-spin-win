@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import ParticlesBackground from "./ParticlesBackground";
 import { useContent } from "@/hooks/useContent";
@@ -19,8 +19,8 @@ const HeroSection = () => {
       <div className="container mx-auto px-6 relative z-20 pt-16">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ x: -24 }}
+            animate={{ x: 0 }}
             transition={{ duration: 0.8, ease }}
             className="text-center lg:text-left"
           >

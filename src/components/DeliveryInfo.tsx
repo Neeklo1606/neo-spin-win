@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { MapPin, Clock, Truck } from "lucide-react";
 
 const ease = [0.4, 0, 0.2, 1] as const;
