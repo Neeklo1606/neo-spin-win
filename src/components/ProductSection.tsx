@@ -6,8 +6,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
 import { apiService, type Product } from "@/lib/api";
 import { useContent } from "@/hooks/useContent";
-import cylinder5l from "@/assets/cylinder-5l.png";
-import cylinder10l from "@/assets/cylinder-10l.png";
+import cylinder5l from "@/assets/cylinder-5l.webp";
+import cylinder10l from "@/assets/cylinder-10l.webp";
 
 type Volume = "5л" | "10л";
 type PurchaseType = "purchase" | "exchange";

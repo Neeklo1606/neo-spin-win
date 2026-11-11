@@ -1,4 +1,4 @@
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { useContent } from "@/hooks/useContent";
 
 const DEFAULT_LAW_URL = "https://www.consultant.ru/document/cons_doc_LAW_372637/";

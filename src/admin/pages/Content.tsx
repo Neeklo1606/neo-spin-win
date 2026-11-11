@@ -3,6 +3,7 @@ import api from '../lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { invalidateContentCache } from '@/hooks/useContent';
 
 interface ContentBlock {
   id: number;
@@ -84,6 +85,7 @@ export default function Content() {
       }));
 
       await api.patch('/content', { content: updates });
+      invalidateContentCache();
       
       // Update local state
       setBlocks((prev) =>

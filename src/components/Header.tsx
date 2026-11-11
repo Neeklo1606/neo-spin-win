@@ -2,7 +2,7 @@ import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { motion, useScroll, useTransform } from "framer-motion";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 const Header = () => {
   const { toggleCart, totalItems } = useCart();

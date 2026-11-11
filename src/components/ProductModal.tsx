@@ -4,8 +4,8 @@ import { X, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { apiService, type Product } from "@/lib/api";
-import cylinder5l from "@/assets/cylinder-5l.png";
-import cylinder10l from "@/assets/cylinder-10l.png";
+import cylinder5l from "@/assets/cylinder-5l.webp";
+import cylinder10l from "@/assets/cylinder-10l.webp";
 
 interface ProductModalProps {
   isOpen: boolean;

@@ -78,19 +78,23 @@ const HeroSection = () => {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.85 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease, delay: 0.3 }}
+            initial={{ scale: 0.92 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.8, ease }}
             className="relative flex justify-center items-center"
           >
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-72 h-72 md:w-80 md:h-80 rounded-full gold-gradient opacity-[0.08] blur-3xl animate-pulse-glow" />
             </div>
-            <motion.img
+            <img
               src={get('hero_image') || '/logobalonc.png'}
-              alt="N2O"
+              alt="Закись азота N2O — доставка по Ростову-на-Дону"
+              width={768}
+              height={512}
               className="relative z-10 h-[200px] md:h-[250px] w-auto object-contain animate-float-gentle drop-shadow-2xl"
               loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           </motion.div>
         </div>

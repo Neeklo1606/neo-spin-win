@@ -4,22 +4,22 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
-import LoadingScreen from "@/components/LoadingScreen";
+import { lazy, Suspense } from "react";
 import Index from "./pages/Index.tsx";
-import Profile from "./pages/Profile.tsx";
-import NotFound from "./pages/NotFound.tsx";
-import Checkout from "./pages/Checkout.tsx";
-import AdminLogin from "./admin/pages/Login.tsx";
-import AdminLayout from "./admin/components/AdminLayout.tsx";
-import ProtectedRoute from "./admin/components/ProtectedRoute.tsx";
-import AdminDashboard from "./admin/pages/Dashboard.tsx";
-import AdminOrders from "./admin/pages/Orders.tsx";
-import AdminProducts from "./admin/pages/Products.tsx";
-import AdminUsers from "./admin/pages/Users.tsx";
-import AdminBroadcast from "./admin/pages/Broadcast.tsx";
-import AdminBotSettings from "./admin/pages/BotSettings.tsx";
-import AdminContent from "./admin/pages/Content.tsx";
-import AdminDocs from "./admin/pages/AdminDocs.tsx";
+const Profile = lazy(() => import("./pages/Profile.tsx"));
+const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Checkout = lazy(() => import("./pages/Checkout.tsx"));
+const AdminLogin = lazy(() => import("./admin/pages/Login.tsx"));
+const AdminLayout = lazy(() => import("./admin/components/AdminLayout.tsx"));
+const ProtectedRoute = lazy(() => import("./admin/components/ProtectedRoute.tsx"));
+const AdminDashboard = lazy(() => import("./admin/pages/Dashboard.tsx"));
+const AdminOrders = lazy(() => import("./admin/pages/Orders.tsx"));
+const AdminProducts = lazy(() => import("./admin/pages/Products.tsx"));
+const AdminUsers = lazy(() => import("./admin/pages/Users.tsx"));
+const AdminBroadcast = lazy(() => import("./admin/pages/Broadcast.tsx"));
+const AdminBotSettings = lazy(() => import("./admin/pages/BotSettings.tsx"));
+const AdminContent = lazy(() => import("./admin/pages/Content.tsx"));
+const AdminDocs = lazy(() => import("./admin/pages/AdminDocs.tsx"));
 
 const queryClient = new QueryClient();
 
@@ -27,10 +27,10 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CartProvider>
-        <LoadingScreen>
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/profile" element={<Profile />} />
@@ -125,8 +125,8 @@ const App = () => (
                 
                 <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
-        </LoadingScreen>
       </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>

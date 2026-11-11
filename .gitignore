@@ -47,3 +47,4 @@ backend/prisma/*.backup
 backend/scripts/upsert-admin.js
 .env
 backend/.env
+vite.preview.local.ts
