@@ -1,12 +1,13 @@
-import { IsArray, IsInt, IsString, IsOptional, IsEnum, ValidateNested, ArrayMinSize, Min } from 'class-validator';
+import { IsArray, IsInt, IsString, IsOptional, IsEnum, ValidateNested, ArrayMinSize, Min, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class OrderItemDto {
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsString()
-  volume: string;
+  volume?: string;
 
   @IsString()
   type: string;
@@ -22,7 +23,8 @@ class OrderItemDto {
 
 export class CreateOrderDto {
   @IsString()
-  initData: string;
+  @IsOptional()
+  initData?: string;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Order must contain at least one item' })
@@ -33,6 +35,20 @@ export class CreateOrderDto {
   @IsString()
   @IsOptional()
   address?: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^(\+7|8)\d{10}$/)
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
+  @Matches(/^@[a-zA-Z0-9_]{5,}$/)
+  telegramUsername?: string;
 
   @IsEnum(['free', 'paid'])
   deliveryType: 'free' | 'paid';

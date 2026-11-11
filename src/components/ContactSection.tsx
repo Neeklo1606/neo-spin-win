@@ -20,14 +20,18 @@ const ContactSection = () => (
         </h2>
         <p className="text-muted-foreground mb-8 leading-relaxed">Мы на связи 24/7. Ответим на любые вопросы.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          {/*
           <Button variant="gold" size="lg" className="gap-2 shadow-lg shadow-primary/20">
             <Phone className="w-5 h-5" />
             Позвонить
           </Button>
-          <Button variant="goldOutline" size="lg" className="gap-2">
-            <Send className="w-5 h-5" />
-            Telegram
-          </Button>
+          */}
+          <a href="https://t.me/MVS636" target="_blank" rel="noopener noreferrer">
+            <Button variant="goldOutline" size="lg" className="gap-2">
+              <Send className="w-5 h-5" />
+              Telegram
+            </Button>
+          </a>
         </div>
       </motion.div>
     </div>

@@ -19,6 +19,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -41,6 +42,22 @@ export default function Orders() {
       fetchOrders();
     } catch (error) {
       console.error('Failed to update order:', error);
+    }
+  };
+
+  const deleteOrder = async (id: number) => {
+    const confirmed = window.confirm(`Удалить заказ #${id}? Это действие нельзя отменить.`);
+    if (!confirmed) return;
+
+    setDeletingOrderId(id);
+    try {
+      await api.delete(`/orders/${id}`);
+      setOrders((prev) => prev.filter((order) => order.id !== id));
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      alert('Не удалось удалить заказ. Попробуйте еще раз.');
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -112,6 +129,14 @@ export default function Orders() {
                     <option value="processing">В обработке</option>
                     <option value="delivered">Доставлен</option>
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => deleteOrder(order.id)}
+                    disabled={deletingOrderId === order.id}
+                    className="px-3 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingOrderId === order.id ? 'Удаление...' : 'Удалить'}
+                  </button>
                 </div>
               </div>
             ))

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { User, MapPin, Package, Phone, Mail, Send, Plus, Trash2 } from 'lucide-react';
+import { User, MapPin, Package, Phone, Send, Plus, Trash2 } from 'lucide-react';
 import { apiService, type User as UserType, type Order, type Address } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
@@ -13,6 +13,8 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [newAddress, setNewAddress] = useState('');
+  const [telegramChannelUrl, setTelegramChannelUrl] = useState<string | null>(null);
+  const [supportPhone, setSupportPhone] = useState<string>('+7 (999) 123-45-67');
 
   useEffect(() => {
     loadProfileData();
@@ -21,24 +23,117 @@ const Profile = () => {
   const loadProfileData = async () => {
     setLoading(true);
     
-    // Check if Telegram WebApp is available
-    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
-    if (!initData) {
-      setLoading(false);
-      return;
+    // Load public settings (telegram channel, etc.) for conditional UI
+    try {
+      const publicSettings = await apiService.getPublicSettings();
+      setTelegramChannelUrl(publicSettings?.telegramChannelUrl || null);
+      setSupportPhone(publicSettings?.phone || '+7 (999) 123-45-67');
+    } catch {
+      setTelegramChannelUrl(null);
+      setSupportPhone('+7 (999) 123-45-67');
     }
     
-    const [userData, ordersData] = await Promise.all([
-      apiService.getUser(),
-      apiService.getUserOrders(),
-    ]);
-
-    setUser(userData);
-    setOrders(ordersData);
+    // Check if Telegram WebApp is available
+    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
     
-    // Load addresses from localStorage (using user id if available)
-    if (userData) {
-      const savedAddresses = localStorage.getItem(`addresses_${userData.telegramId}`);
+    if (initData) {
+      // Telegram Mini App: load user and orders from API
+      try {
+        const [userData, ordersData] = await Promise.all([
+          apiService.getUser(),
+          apiService.getUserOrders(), // MiniApp: telegramId will be sent automatically
+        ]);
+
+        console.log('👤 User data:', userData);
+        console.log('📦 Orders data:', ordersData);
+
+        setUser(userData);
+        
+        // Handle orders data - can be array or { data: [...] }
+        let ordersArray = [];
+        if (Array.isArray(ordersData)) {
+          ordersArray = ordersData;
+        } else if (ordersData && typeof ordersData === 'object') {
+          ordersArray = ordersData.data || [];
+        }
+        
+        console.log('📦 Raw ordersData:', ordersData);
+        console.log('📦 Parsed orders array:', ordersArray);
+        console.log('📦 Orders count:', ordersArray.length);
+        
+        if (ordersArray.length > 0) {
+          setOrders(ordersArray);
+        } else {
+          console.log('⚠️ No orders found, setting empty array');
+          setOrders([]);
+        }
+        
+        // Load addresses from localStorage (using user id if available)
+        if (userData) {
+          const savedAddresses = localStorage.getItem(`addresses_${userData.telegramId}`);
+          if (savedAddresses) {
+            try {
+              const parsedAddresses = JSON.parse(savedAddresses);
+              console.log('📍 Loaded addresses from localStorage:', parsedAddresses);
+              if (Array.isArray(parsedAddresses) && parsedAddresses.length > 0) {
+                setAddresses(parsedAddresses);
+              } else {
+                console.log('📍 Addresses array is empty');
+                setAddresses([]);
+              }
+            } catch (e) {
+              console.error('❌ Failed to parse addresses:', e);
+              setAddresses([]);
+            }
+          } else {
+            console.log('📍 No saved addresses in localStorage for user:', userData.telegramId);
+            setAddresses([]);
+          }
+        } else {
+          console.log('⚠️ No user data, cannot load addresses');
+          setAddresses([]);
+        }
+      } catch (error) {
+        console.error('❌ Failed to load profile data:', error);
+      }
+    } else {
+      // Web version: try to load orders from API by phone
+      console.log('🌐 Web version: loading orders from API by phone');
+      
+      // Try to get phone from localStorage (saved during checkout)
+      const savedPhone = localStorage.getItem('user_phone');
+      
+      if (savedPhone) {
+        try {
+          const ordersData = await apiService.getUserOrders(savedPhone);
+          console.log('📦 WEB orders from API:', ordersData);
+          if (ordersData && ordersData.length > 0) {
+            setOrders(ordersData);
+          } else {
+            // Fallback to localStorage
+            const savedOrders = localStorage.getItem('orders_web');
+            if (savedOrders) {
+              setOrders(JSON.parse(savedOrders));
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to load orders from API:', error);
+          // Fallback to localStorage
+          const savedOrders = localStorage.getItem('orders_web');
+          if (savedOrders) {
+            setOrders(JSON.parse(savedOrders));
+          }
+        }
+      } else {
+        // No phone saved, use localStorage only
+        const savedOrders = localStorage.getItem('orders_web');
+        if (savedOrders) {
+          setOrders(JSON.parse(savedOrders));
+        }
+      }
+      
+      // Load addresses from localStorage (use generic key for web)
+      const savedAddresses = localStorage.getItem('addresses_web');
       if (savedAddresses) {
         setAddresses(JSON.parse(savedAddresses));
       }
@@ -50,43 +145,61 @@ const Profile = () => {
   const handleAddAddress = async () => {
     if (!newAddress.trim()) return;
 
-    const addressData = await apiService.addAddress(newAddress.trim());
+    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
     
-    if (addressData) {
-      const updatedAddresses = [...addresses, addressData];
-      setAddresses(updatedAddresses);
-      if (user) {
-        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+    if (initData) {
+      // Telegram Mini App: try API first
+      const addressData = await apiService.addAddress(newAddress.trim());
+      
+      if (addressData) {
+        const updatedAddresses = [...addresses, addressData];
+        setAddresses(updatedAddresses);
+        if (user) {
+          localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+        }
+        setNewAddress('');
+        setShowAddressModal(false);
+        return;
       }
-      setNewAddress('');
-      setShowAddressModal(false);
-    } else {
-      // Fallback to localStorage if API fails
-      const newAddr: Address = {
-        id: Date.now().toString(),
-        address: newAddress.trim(),
-      };
-      const updatedAddresses = [...addresses, newAddr];
-      setAddresses(updatedAddresses);
-      if (user) {
-        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
-      }
-      setNewAddress('');
-      setShowAddressModal(false);
     }
+    
+    // Fallback to localStorage (for web or if API fails)
+    const newAddr: Address = {
+      id: Date.now().toString(),
+      address: newAddress.trim(),
+    };
+    const updatedAddresses = [...addresses, newAddr];
+    setAddresses(updatedAddresses);
+    
+    // Save to appropriate localStorage key
+    if (user) {
+      localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+    } else {
+      localStorage.setItem('addresses_web', JSON.stringify(updatedAddresses));
+    }
+    
+    setNewAddress('');
+    setShowAddressModal(false);
   };
 
   const handleDeleteAddress = async (addressId: string) => {
     if (!confirm('Удалить адрес?')) return;
 
-    const success = await apiService.deleteAddress(addressId);
+    const initData = typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initData;
     
-    if (success || true) { // Always update local state
-      const updatedAddresses = addresses.filter((addr) => addr.id !== addressId);
-      setAddresses(updatedAddresses);
-      if (user) {
-        localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
-      }
+    if (initData) {
+      await apiService.deleteAddress(addressId);
+    }
+    
+    // Always update local state
+    const updatedAddresses = addresses.filter((addr) => addr.id !== addressId);
+    setAddresses(updatedAddresses);
+    
+    // Save to appropriate localStorage key
+    if (user) {
+      localStorage.setItem(`addresses_${user.telegramId}`, JSON.stringify(updatedAddresses));
+    } else {
+      localStorage.setItem('addresses_web', JSON.stringify(updatedAddresses));
     }
   };
 
@@ -124,8 +237,18 @@ const Profile = () => {
   }
 
   const displayName = user
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Пользователь'
-    : 'Пользователь';
+    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Гость'
+    : 'Гость';
+
+  // Get user photo from Telegram Mini App
+  const getUserPhoto = (): string | null => {
+    if (typeof window !== 'undefined' && (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.photo_url) {
+      return (window as any).Telegram.WebApp.initDataUnsafe.user.photo_url;
+    }
+    return null;
+  };
+
+  const userPhoto = getUserPhoto();
 
   return (
     <div className="min-h-screen bg-background pb-16 md:pb-0">
@@ -139,7 +262,25 @@ const Profile = () => {
             className="glass-card rounded-2xl p-6 mb-6"
           >
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full gold-gradient flex items-center justify-center text-2xl font-bold text-primary-foreground">
+              {userPhoto ? (
+                <img
+                  src={userPhoto}
+                  alt={displayName}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-primary"
+                  onError={(e) => {
+                    // Hide image and show fallback avatar
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    const parent = (e.target as HTMLImageElement).parentElement;
+                    if (parent) {
+                      const fallback = parent.querySelector('.avatar-fallback') as HTMLElement;
+                      if (fallback) fallback.style.display = 'flex';
+                    }
+                  }}
+                />
+              ) : null}
+              <div 
+                className={`w-16 h-16 rounded-full gold-gradient flex items-center justify-center text-2xl font-bold text-primary-foreground avatar-fallback ${userPhoto ? 'hidden' : ''}`}
+              >
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
@@ -299,21 +440,14 @@ const Profile = () => {
             </h3>
             <div className="space-y-3">
               <a
-                href="tel:+79991234567"
+                href={`tel:${supportPhone.replace(/[^\d+]/g, '')}`}
                 className="flex items-center gap-3 p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
               >
                 <Phone className="w-5 h-5 text-primary" />
-                <span className="text-foreground">+7 (999) 123-45-67</span>
+                <span className="text-foreground">{supportPhone}</span>
               </a>
               <a
-                href="mailto:info@n2o-delivery.ru"
-                className="flex items-center gap-3 p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
-              >
-                <Mail className="w-5 h-5 text-primary" />
-                <span className="text-foreground">info@n2o-delivery.ru</span>
-              </a>
-              <a
-                href="https://t.me/n2o_support"
+                href="https://t.me/MVS636"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
@@ -321,6 +455,17 @@ const Profile = () => {
                 <Send className="w-5 h-5 text-primary" />
                 <span className="text-foreground">Telegram поддержка</span>
               </a>
+              {telegramChannelUrl && (
+                <a
+                  href={telegramChannelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                >
+                  <Send className="w-5 h-5 text-primary" />
+                  <span className="text-foreground">Наш Telegram‑канал</span>
+                </a>
+              )}
             </div>
           </motion.div>
         </div>

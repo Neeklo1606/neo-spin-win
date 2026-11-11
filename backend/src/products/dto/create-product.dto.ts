@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsBoolean, IsIn, ValidateIf } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -8,11 +8,44 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
+  // Legacy fields (optional for backward compatibility)
+  @ValidateIf((o) => o.productType === 'cylinder')
   @IsInt()
-  price5l: number;
+  @IsOptional()
+  price5l?: number;
+
+  @ValidateIf((o) => o.productType === 'cylinder')
+  @IsInt()
+  @IsOptional()
+  price10l?: number;
 
   @IsInt()
-  price10l: number;
+  @IsOptional()
+  exchangePrice5l?: number;
+
+  @IsInt()
+  @IsOptional()
+  exchangePrice10l?: number;
+
+  // New universal fields
+  @ValidateIf((o) => o.productType !== 'cylinder')
+  @IsInt()
+  @IsOptional()
+  price?: number;
+
+  @IsString()
+  @IsIn(['fixed', 'request'])
+  @IsOptional()
+  priceType?: string;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @IsString()
+  @IsIn(['cylinder', 'accessory', 'other'])
+  @IsOptional()
+  productType?: string;
 
   @IsString()
   @IsOptional()

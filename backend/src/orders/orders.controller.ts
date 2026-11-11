@@ -14,7 +14,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-@Controller('orders')
+@Controller('api/orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
@@ -33,6 +33,20 @@ export class OrdersController {
     return this.ordersService.findAll(
       page ? parseInt(page) : 1,
       limit ? parseInt(limit) : 20,
+      status,
+    );
+  }
+
+  @Get('admin')
+  @UseGuards(JwtAuthGuard)
+  findAllAdmin(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.ordersService.findAll(
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
       status,
     );
   }

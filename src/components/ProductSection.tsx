@@ -1,67 +1,143 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useCart } from "@/contexts/CartContext";
-import AccessoryCard from "./AccessoryCard";
+import { apiService, type Product } from "@/lib/api";
+import { useContent } from "@/hooks/useContent";
 import cylinder5l from "@/assets/cylinder-5l.png";
 import cylinder10l from "@/assets/cylinder-10l.png";
-import punchballImg from "@/assets/accessory-punchball.png";
-import balloonsImg from "@/assets/accessory-balloons.png";
-import bag1Img from "@/assets/accessory-bag1.png";
-import bag2Img from "@/assets/accessory-bag2.png";
-import standImg from "@/assets/accessory-stand.png";
 
 type Volume = "5л" | "10л";
 type PurchaseType = "purchase" | "exchange";
-
-const PRICES: Record<Volume, number> = {
-  "5л": 3500,
-  "10л": 5500,
-};
-
-const accessories = [
-  { id: "punchball", name: "Панчбол", price: 150, priceType: "fixed" as const, image: punchballImg },
-  { id: "balloons-pack", name: "Упаковка шариков", price: 500, priceType: "fixed" as const, image: balloonsImg },
-  { id: "bag-1", name: "Сумка для баллона", price: 2000, priceType: "fixed" as const, image: bag1Img },
-  { id: "bag-2", name: "Сумка для баллона (v2)", price: 2000, priceType: "fixed" as const, image: bag2Img },
-  { id: "stand", name: "Подставка под баллон", price: 2000, priceType: "fixed" as const, image: standImg },
-];
+type ProductTab = "n2o" | "accessories";
 
 const ProductSection = () => {
   const { addItem } = useCart();
+  const { get } = useContent();
+  const [activeTab, setActiveTab] = useState<ProductTab>("n2o");
   const [selectedVolume, setSelectedVolume] = useState<Volume>("5л");
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("purchase");
   const [quantity, setQuantity] = useState(1);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedN2OProductId, setSelectedN2OProductId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const currentPrice = PRICES[selectedVolume];
-  const currentImage = selectedVolume === "5л" ? cylinder5l : cylinder10l;
+  useEffect(() => {
+    loadProduct();
+  }, []);
+
+  const loadProduct = async () => {
+    setLoading(true);
+    try {
+      const products = await apiService.getProducts();
+
+      setProducts(products);
+
+      // Prefer active N2O/cylinder product for the main tab, fallback to first product
+      const n2oCandidates = products.filter((p) => (p.category || "").toLowerCase() === "n2o" || (p.productType || "cylinder") === "cylinder");
+      const firstN2O = n2oCandidates.find((p) => p.isActive) || n2oCandidates[0] || products[0];
+      if (firstN2O) {
+        setSelectedN2OProductId(firstN2O.id);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Strict filter for accessories visibility (requested)
+  const accessoryProducts = products.filter((p) => p.category === "accessories");
+  const n2oProducts = products.filter((p) => p.category !== "accessories");
+  const selectedN2OProduct = n2oProducts.find((p) => p.id === selectedN2OProductId) || n2oProducts[0] || null;
+
+  const getCurrentPrice = (): number => {
+    if (!selectedN2OProduct) {
+      return 0;
+    }
+    
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    
+    // For non-cylinders, use universal price
+    if (productType !== 'cylinder') {
+      if (selectedN2OProduct.priceType === 'request') {
+        return 0; // Will show "по запросу"
+      }
+      return selectedN2OProduct.price || 0;
+    }
+    
+    // For cylinders, use volume-based pricing
+    if (purchaseType === "exchange") {
+      return selectedVolume === "5л"
+        ? (selectedN2OProduct.exchangePrice5l ?? selectedN2OProduct.price5l ?? 0)
+        : (selectedN2OProduct.exchangePrice10l ?? selectedN2OProduct.price10l ?? 0);
+    }
+    
+    return selectedVolume === "5л"
+      ? (selectedN2OProduct.price5l ?? 0)
+      : (selectedN2OProduct.price10l ?? 0);
+  };
+
+  const currentPrice = getCurrentPrice();
+  
+  // Use imageUrl from API, fallback to imported images if not available
+  const currentImage = selectedN2OProduct?.imageUrl || (selectedVolume === "5л" ? cylinder5l : cylinder10l) || '/placeholder.png';
 
   const handleBuyNow = () => {
+    if (!selectedN2OProduct) return;
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    const safeName = selectedN2OProduct.name || 'Товар';
+    const safeImage = selectedN2OProduct.imageUrl || currentImage || '/placeholder.png';
+    
     addItem({
-      id: `${selectedVolume}-${purchaseType}`,
-      name: "Закись азота",
-      volume: selectedVolume,
+      id: `${productType}-${selectedN2OProduct.id}-${Date.now()}`,
+      name: safeName,
+      volume: productType === 'cylinder' ? selectedVolume : undefined,
       type: purchaseType,
       price: currentPrice,
-      image: currentImage,
-      quantity,
-    });
+      image: safeImage,
+      productType: productType as 'cylinder' | 'accessory' | 'other',
+    }, quantity);
   };
 
   const handleAddToCart = () => {
+    if (!selectedN2OProduct) return;
+    const productType = selectedN2OProduct.productType || 'cylinder';
+    const safeName = selectedN2OProduct.name || 'Товар';
+    const safeImage = selectedN2OProduct.imageUrl || currentImage || '/placeholder.png';
+    
     addItem({
-      id: `${selectedVolume}-${purchaseType}`,
-      name: "Закись азота",
-      volume: selectedVolume,
+      id: `${productType}-${selectedN2OProduct.id}-${Date.now()}`,
+      name: safeName,
+      volume: productType === 'cylinder' ? selectedVolume : undefined,
       type: purchaseType,
       price: currentPrice,
-      image: currentImage,
-      quantity,
-    });
+      image: safeImage,
+      productType: productType as 'cylinder' | 'accessory' | 'other',
+    }, quantity);
   };
+
+  if (loading) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Загрузка товаров...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (activeTab === "n2o" && !selectedN2OProduct) {
+    return (
+      <section id="products" className="py-20 relative">
+        <div className="container mx-auto px-4">
+          <div className="text-center text-muted-foreground">Товары не найдены</div>
+        </div>
+      </section>
+    );
+  }
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () => setQuantity((prev) => Math.max(1, prev - 1));
@@ -76,201 +152,294 @@ const ProductSection = () => {
           transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
           className="text-center mb-14"
         >
-          <h2 className="text-3xl md:text-5xl font-bold mb-4">
-            <span className="gold-text">Наши продукты</span>
-          </h2>
+              <h2 className="text-3xl md:text-5xl font-bold mb-4">
+                <span className="gold-text">{get('products_title', 'Наши продукты')}</span>
+              </h2>
           <p className="text-muted-foreground text-lg">Выберите подходящий товар</p>
-        </motion.div>
-
-        <Tabs defaultValue="n2o" className="max-w-4xl mx-auto">
-          <TabsList className="w-full mb-8 bg-secondary/60 backdrop-blur-sm border border-border/50 p-1 rounded-xl h-auto">
-            <TabsTrigger
-              value="n2o"
-              className="flex-1 py-3 text-sm font-semibold rounded-lg data-[state=active]:gold-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+          <div className="mt-6 inline-flex w-full max-w-xl rounded-lg border border-border/60 overflow-hidden">
+            <button
+              onClick={() => setActiveTab("n2o")}
+              className={`flex-1 h-12 text-sm sm:text-base font-medium px-3 sm:px-4 whitespace-nowrap ${
+                activeTab === "n2o"
+                  ? "bg-purple-600 text-white"
+                  : "bg-transparent text-gray-400 border-0"
+              }`}
             >
               Закись азота
-            </TabsTrigger>
-            <TabsTrigger
-              value="accessories"
-              className="flex-1 py-3 text-sm font-semibold rounded-lg data-[state=active]:gold-gradient data-[state=active]:text-primary-foreground data-[state=active]:shadow-md transition-all"
+            </button>
+            <button
+              onClick={() => setActiveTab("accessories")}
+              className={`flex-1 h-12 text-sm sm:text-base font-medium px-3 sm:px-4 whitespace-nowrap ${
+                activeTab === "accessories"
+                  ? "bg-purple-600 text-white"
+                  : "bg-transparent text-gray-400 border-0"
+              }`}
             >
               Аксессуары
-            </TabsTrigger>
-          </TabsList>
+            </button>
+          </div>
+        </motion.div>
 
-          <TabsContent value="n2o">
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <div className="glass-card rounded-2xl overflow-hidden border border-border/50">
-                <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
-                  {/* Product Image */}
-                  <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-6 md:p-8 overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
-                    <motion.img
-                      key={selectedVolume}
-                      src={currentImage}
-                      alt="Закись азота"
-                      className="relative z-10 w-full max-w-[180px] md:max-w-[200px] h-auto object-contain drop-shadow-[0_8px_24px_rgba(212,175,55,0.2)]"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-                    />
-                  </div>
-
-                  {/* Product Details */}
-                  <div className="flex flex-col gap-6">
-                    <div>
-                      <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
-                        Закись азота
-                      </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        Высококачественный продукт для профессионального использования
-                      </p>
-                    </div>
-
-                    {/* Volume Selector */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-foreground">Объём</label>
-                      <div className="flex gap-2 sm:gap-3 flex-wrap">
-                        {(["5л", "10л"] as Volume[]).map((volume) => (
-                          <motion.button
-                            key={volume}
-                            onClick={() => setSelectedVolume(volume)}
-                            whileTap={{ scale: 0.97 }}
-                            className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-semibold text-sm transition-all duration-300 min-w-[80px] ${
-                              selectedVolume === volume
-                                ? "gold-gradient text-primary-foreground gold-glow border-2 border-primary"
-                                : "bg-secondary/80 text-muted-foreground border-2 border-transparent hover:bg-secondary"
-                            }`}
-                          >
-                            {volume}
-                          </motion.button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Purchase Type Selector */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-foreground">Тип покупки</label>
-                      <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
-                        <ToggleGroup
-                          type="single"
-                          value={purchaseType}
-                          onValueChange={(value) => value && setPurchaseType(value as PurchaseType)}
-                          className="flex gap-1"
-                        >
-                          <ToggleGroupItem
-                            value="purchase"
-                            aria-label="Покупка"
-                            className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground"
-                          >
-                            Покупка
-                          </ToggleGroupItem>
-                          <ToggleGroupItem
-                            value="exchange"
-                            aria-label="Обмен"
-                            className="px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground"
-                          >
-                            Обмен
-                          </ToggleGroupItem>
-                        </ToggleGroup>
-                      </div>
-                    </div>
-
-                    {/* Quantity Stepper */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-medium text-foreground">Количество</label>
-                      <div className="flex items-center gap-4">
-                        <motion.button
-                          onClick={decrementQuantity}
-                          whileTap={{ scale: quantity > 1 ? 0.97 : 1 }}
-                          className={`w-10 h-10 rounded-lg glass-card flex items-center justify-center text-foreground transition-colors ${
-                            quantity > 1 ? "hover:bg-secondary cursor-pointer" : "opacity-50 cursor-not-allowed"
-                          }`}
-                          disabled={quantity <= 1}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </motion.button>
-                        <span className="text-xl font-bold text-foreground min-w-[3ch] text-center">
-                          {quantity}
-                        </span>
-                        <motion.button
-                          onClick={incrementQuantity}
-                          whileTap={{ scale: 0.97 }}
-                          className="w-10 h-10 rounded-lg glass-card flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="pt-2 border-t border-border/50">
-                      <AnimatePresence mode="wait">
-                        <motion.div
-                          key={currentPrice}
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          transition={{ duration: 0.3 }}
-                          className="flex items-baseline gap-2 flex-wrap"
-                        >
-                          <span className="text-4xl md:text-5xl font-extrabold gold-text inline-flex items-center gap-1 whitespace-nowrap">
-                            <span className="flex-shrink-0">{currentPrice.toLocaleString()}</span>
-                            <span className="flex-shrink-0">₽</span>
-                          </span>
-                          {quantity > 1 && (
-                            <span className="text-muted-foreground text-sm inline-flex items-center gap-1 whitespace-nowrap">
-                              <span>(</span>
-                              <span className="inline-flex items-center gap-1">
-                                <span className="flex-shrink-0">{(currentPrice * quantity).toLocaleString()}</span>
-                                <span className="flex-shrink-0">₽</span>
-                              </span>
-                              <span>за {quantity} шт.)</span>
-                            </span>
-                          )}
-                        </motion.div>
-                      </AnimatePresence>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col gap-3 pt-2 md:items-start">
-                      <Button
-                        variant="gold"
-                        size="lg"
-                        onClick={handleBuyNow}
-                        className="w-full md:w-auto md:min-w-[240px] shadow-lg shadow-primary/20"
-                      >
-                        Купить сейчас
-                      </Button>
-                      <Button
-                        variant="goldOutline"
-                        size="lg"
-                        onClick={handleAddToCart}
-                        className="w-full md:w-auto md:min-w-[240px] flex items-center justify-center gap-2"
-                      >
-                        <ShoppingCart className="w-5 h-5" />
-                        В корзину
-                      </Button>
-                    </div>
-                  </div>
+        {activeTab === "n2o" && selectedN2OProduct && (
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="max-w-4xl mx-auto"
+        >
+          <div className="glass-card rounded-2xl overflow-hidden border border-border/50">
+            <div className="grid md:grid-cols-2 gap-8 p-6 md:p-8">
+              {/* Product Image */}
+              <div className="relative flex items-center justify-center bg-gradient-to-b from-primary/10 via-secondary/60 to-transparent rounded-xl p-0 overflow-hidden w-full">
+                <div className="w-full h-[320px] sm:h-[380px] md:h-[460px] rounded-xl overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 to-accent/5 rounded-xl" />
+                <motion.img
+                  key={selectedN2OProduct?.imageUrl || selectedVolume}
+                  src={currentImage}
+                  alt={selectedN2OProduct?.name || "Закись азота"}
+                  width={320}
+                  height={460}
+                  loading="eager"
+                  className="relative z-10 w-full h-full object-contain drop-shadow-[0_8px_24px_rgba(168,85,247,0.25)]"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== '/placeholder.png') {
+                      target.src = '/placeholder.png';
+                    }
+                  }}
+                />
                 </div>
               </div>
-            </motion.div>
-          </TabsContent>
 
-          <TabsContent value="accessories">
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-              {accessories.map((item, i) => (
-                <AccessoryCard key={item.id} item={item} delay={i * 0.08} />
-              ))}
+              {/* Product Details */}
+              <div className="flex flex-col gap-6">
+                {/* Title and Description */}
+                <div>
+                  <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                    {selectedN2OProduct.name || 'Товар'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedN2OProduct.description || 'Высококачественный продукт для профессионального использования'}
+                  </p>
+                </div>
+
+                {/* Volume Selector */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Объём</label>
+                  <div className="flex gap-2 sm:gap-3 flex-wrap">
+                    {(["5л", "10л"] as Volume[]).map((volume) => {
+                      const volPrice = volume === "5л" 
+                        ? (purchaseType === "exchange" ? (selectedN2OProduct.exchangePrice5l || selectedN2OProduct.price5l) : selectedN2OProduct.price5l)
+                        : (purchaseType === "exchange" ? (selectedN2OProduct.exchangePrice10l || selectedN2OProduct.price10l) : selectedN2OProduct.price10l);
+                      return (
+                        <motion.button
+                          key={volume}
+                          onClick={() => {
+                            setSelectedVolume(volume);
+                          }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`px-4 py-2 sm:px-6 sm:py-3 rounded-full font-semibold text-sm transition-all duration-300 min-w-[80px] ${
+                            selectedVolume === volume
+                              ? "gold-gradient text-primary-foreground gold-glow border-2 border-primary"
+                              : "bg-secondary/80 text-muted-foreground border-2 border-transparent hover:bg-secondary"
+                          }`}
+                        >
+                          {volume}
+                          <span className="block text-xs mt-1 opacity-75">{volPrice.toLocaleString()} ₽</span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Purchase Type Selector - Only show if exchange prices are available */}
+                {(selectedN2OProduct.exchangePrice5l || selectedN2OProduct.exchangePrice10l) && (
+                  <div className="space-y-4">
+                    <label className="text-sm font-medium text-foreground">Тип покупки</label>
+                    <div className="glass-card p-1 rounded-lg inline-flex max-w-full">
+                      <ToggleGroup
+                        type="single"
+                        value={purchaseType}
+                        onValueChange={(value) => {
+                          if (value) {
+                            setPurchaseType(value as PurchaseType);
+                          }
+                        }}
+                        className="flex gap-1"
+                      >
+                        <ToggleGroupItem
+                          value="purchase"
+                          aria-label="Покупка"
+                          className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        >
+                          Покупка
+                        </ToggleGroupItem>
+                        <ToggleGroupItem
+                          value="exchange"
+                          aria-label="Обмен"
+                          className={`px-4 py-2 sm:px-6 sm:py-2.5 rounded-md font-medium text-sm min-w-[120px] transition-all duration-300 data-[state=on]:gold-gradient data-[state=on]:text-primary-foreground data-[state=off]:bg-transparent data-[state=off]:text-muted-foreground hover:data-[state=off]:text-foreground`}
+                        >
+                          Обмен
+                        </ToggleGroupItem>
+                      </ToggleGroup>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quantity Stepper */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-foreground">Количество</label>
+                  <div className="flex items-center gap-4">
+                    <motion.button
+                      onClick={decrementQuantity}
+                      whileTap={{ scale: quantity > 1 ? 0.97 : 1 }}
+                      className={`w-10 h-10 rounded-lg glass-card flex items-center justify-center text-foreground transition-colors ${
+                        quantity > 1 ? "hover:bg-secondary cursor-pointer" : "opacity-50 cursor-not-allowed"
+                      }`}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </motion.button>
+                    <span className="text-xl font-bold text-foreground min-w-[3ch] text-center">
+                      {quantity}
+                    </span>
+                    <motion.button
+                      onClick={incrementQuantity}
+                      whileTap={{ scale: 0.97 }}
+                      className="w-10 h-10 rounded-lg glass-card flex items-center justify-center text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="pt-2 border-t border-border/50">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={currentPrice}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-baseline gap-2 flex-wrap"
+                    >
+                      <span className="text-4xl md:text-5xl font-extrabold gold-text inline-flex items-center gap-1 whitespace-nowrap">
+                        <span className="flex-shrink-0">{currentPrice.toLocaleString()}</span>
+                        <span className="flex-shrink-0">₽</span>
+                      </span>
+                      {quantity > 1 && (
+                        <span className="text-muted-foreground text-sm inline-flex items-center gap-1 whitespace-nowrap">
+                          <span>(</span>
+                          <span className="inline-flex items-center gap-1">
+                            <span className="flex-shrink-0">{(currentPrice * quantity).toLocaleString()}</span>
+                            <span className="flex-shrink-0">₽</span>
+                          </span>
+                          <span>за {quantity} шт.)</span>
+                        </span>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-3 pt-2 md:items-start">
+                  <Button
+                    variant="gold"
+                    size="lg"
+                    onClick={handleBuyNow}
+                    className="w-full md:w-auto md:min-w-[240px] shadow-lg shadow-primary/20"
+                  >
+                    Купить сейчас
+                  </Button>
+                  <Button
+                    variant="goldOutline"
+                    size="lg"
+                    onClick={handleAddToCart}
+                    className="w-full md:w-auto md:min-w-[240px] flex items-center justify-center gap-2"
+                  >
+                    <ShoppingCart className="w-5 h-5" />
+                    В корзину
+                  </Button>
+                </div>
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </motion.div>
+        )}
+
+        {activeTab === "accessories" && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {accessoryProducts.map((product) => {
+              const isRequest = product.priceType === "request";
+              const displayPrice = product.price ?? 0;
+              const imageSrc = product.imageUrl || "/placeholder.png";
+              return (
+                <div key={product.id} className="glass-card rounded-xl p-5 border border-border/50">
+                  <div className="w-full h-44 sm:h-48 overflow-hidden rounded-lg bg-secondary/30 flex items-center justify-center">
+                  <img
+                    src={imageSrc}
+                    alt={product.name || "Товар"}
+                    width={200}
+                    height={176}
+                    loading="lazy"
+                    className="max-w-full max-h-full w-auto h-auto object-contain mb-0"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (target.src !== "/placeholder.png") target.src = "/placeholder.png";
+                    }}
+                  />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{product.name || "Товар"}</h3>
+                  <p className="text-sm text-muted-foreground mb-4">{product.description || "Описание недоступно"}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl font-bold gold-text">
+                      {isRequest ? "По запросу" : `${displayPrice.toLocaleString()} ₽`}
+                    </span>
+                    {isRequest ? (
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        onClick={() => {
+                          const tg = "https://t.me/MVS636";
+                          window.open(tg, "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        Написать
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="gold"
+                        size="sm"
+                        onClick={() => {
+                          addItem({
+                            id: `accessory-${product.id}-${Date.now()}`,
+                            name: product.name || "Товар",
+                            type: "purchase",
+                            price: displayPrice,
+                            image: imageSrc,
+                            productType: product.productType || "accessory",
+                          });
+                        }}
+                      >
+                        В корзину
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            {accessoryProducts.length === 0 && (
+              <div className="col-span-full text-center text-muted-foreground py-10">
+                Аксессуары не найдены
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

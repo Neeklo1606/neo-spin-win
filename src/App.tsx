@@ -17,6 +17,9 @@ import AdminOrders from "./admin/pages/Orders.tsx";
 import AdminProducts from "./admin/pages/Products.tsx";
 import AdminUsers from "./admin/pages/Users.tsx";
 import AdminBroadcast from "./admin/pages/Broadcast.tsx";
+import AdminBotSettings from "./admin/pages/BotSettings.tsx";
+import AdminContent from "./admin/pages/Content.tsx";
+import AdminDocs from "./admin/pages/AdminDocs.tsx";
 
 const queryClient = new QueryClient();
 
@@ -89,8 +92,38 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            
-            <Route path="*" element={<NotFound />} />
+                <Route
+                  path="/admin/bot-settings"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <AdminBotSettings />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/content"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <AdminContent />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/docs"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <AdminDocs />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                
+                <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
         </LoadingScreen>

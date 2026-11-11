@@ -1,4 +1,5 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// API URL: use /api in production, localhost in development
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3000');
 
 export interface User {
   id: number;
@@ -8,6 +9,24 @@ export interface User {
   lastName: string | null;
   phone: string | null;
   createdAt: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  // Legacy fields (for cylinders)
+  price5l: number | null;
+  price10l: number | null;
+  exchangePrice5l: number | null;
+  exchangePrice10l: number | null;
+  // New universal fields
+  price: number | null;
+  priceType: 'fixed' | 'request';
+  category: string | null;
+  productType: 'cylinder' | 'accessory' | 'other';
+  imageUrl: string | null;
+  isActive: boolean;
 }
 
 export interface Order {
@@ -22,6 +41,8 @@ export interface Order {
   totalPrice: number;
   deliveryPrice: number;
   address: string | null;
+  name: string | null;
+  phone: string | null;
   status: 'new' | 'processing' | 'delivered';
   createdAt: string;
 }
@@ -34,6 +55,17 @@ export interface Address {
 
 class ApiService {
   private baseUrl = API_URL;
+
+  async getPublicSettings(): Promise<{ telegramChannelUrl: string | null; telegramUsername: string | null; phone: string | null } | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/public/bot-settings`, { cache: 'no-store' });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (e) {
+      console.error('Failed to fetch public settings', e);
+      return null;
+    }
+  }
 
   // Get initData from Telegram WebApp
   private getInitData(): string | null {
@@ -48,7 +80,7 @@ class ApiService {
       const initData = this.getInitData();
       if (!initData) return null;
 
-      const response = await fetch(`${this.baseUrl}/api/user?initData=${encodeURIComponent(initData)}`);
+      const response = await fetch(`${this.baseUrl}/user?initData=${encodeURIComponent(initData)}`);
       if (!response.ok) return null;
       return await response.json();
     } catch (error) {
@@ -57,18 +89,55 @@ class ApiService {
     }
   }
 
-  async getUserOrders(): Promise<Order[]> {
+  async getUserOrders(phone?: string): Promise<Order[]> {
     try {
-      const initData = this.getInitData();
-      if (!initData) return [];
-
-      const response = await fetch(`${this.baseUrl}/api/orders?initData=${encodeURIComponent(initData)}`);
-      if (!response.ok) return [];
+      // MiniApp: use Telegram ID from header
+      const tg = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : null;
+      const telegramId = tg?.initDataUnsafe?.user?.id;
+      
+      let url = `${this.baseUrl}/orders?`;
+      const params = new URLSearchParams();
+      
+      if (telegramId) {
+        // MiniApp: send telegramId
+        params.append('telegramId', telegramId.toString());
+        console.log('📱 MiniApp: fetching orders by telegramId:', telegramId);
+      } else if (phone) {
+        // WEB: send phone
+        params.append('phone', phone);
+        console.log('🌐 WEB: fetching orders by phone:', phone);
+      } else {
+        // Fallback: try initData (legacy)
+        const initData = this.getInitData();
+        if (initData) {
+          params.append('initData', initData);
+          console.log('📱 Legacy: fetching orders by initData');
+        } else {
+          console.log('⚠️ No telegramId or phone provided');
+          return [];
+        }
+      }
+      
+      url += params.toString();
+      
+      const headers: HeadersInit = {};
+      if (telegramId) {
+        headers['x-telegram-id'] = telegramId.toString();
+      }
+      
+      const response = await fetch(url, { headers });
+      if (!response.ok) {
+        console.error('❌ Failed to fetch orders:', response.status, response.statusText);
+        return [];
+      }
+      
       const data = await response.json();
       // Handle both { data: [...] } and direct array responses
-      return Array.isArray(data) ? data : (data.data || []);
+      const orders = Array.isArray(data) ? data : (data.data || []);
+      console.log('✅ Orders fetched:', orders.length);
+      return orders;
     } catch (error) {
-      console.error('Failed to fetch orders:', error);
+      console.error('❌ Failed to fetch orders:', error);
       return [];
     }
   }
@@ -78,7 +147,7 @@ class ApiService {
       const initData = this.getInitData();
       if (!initData) return null;
 
-      const response = await fetch(`${this.baseUrl}/api/address`, {
+      const response = await fetch(`${this.baseUrl}/address`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData, address }),
@@ -96,7 +165,7 @@ class ApiService {
       const initData = this.getInitData();
       if (!initData) return false;
 
-      const response = await fetch(`${this.baseUrl}/api/address/${addressId}`, {
+      const response = await fetch(`${this.baseUrl}/address/${addressId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData }),
@@ -105,6 +174,26 @@ class ApiService {
     } catch (error) {
       console.error('Failed to delete address:', error);
       return false;
+    }
+  }
+
+  async getProducts(): Promise<Product[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/products`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      console.log('📦 Products loaded from API:', data);
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      return [];
     }
   }
 
@@ -117,35 +206,70 @@ class ApiService {
       quantity: number;
     }>;
     address?: string;
+    name?: string;
+    phone?: string;
+    telegramUsername?: string;
     deliveryType: 'free' | 'paid';
   }): Promise<{ id: number; success: boolean } | null> {
     try {
-      const initData = this.getInitData();
-      if (!initData) {
-        throw new Error('Telegram initData is required');
-      }
+      console.log('🛒 createOrder called with:', { 
+        itemsCount: orderData.items?.length,
+        address: orderData.address,
+        name: orderData.name,
+        phone: orderData.phone,
+        baseUrl: this.baseUrl 
+      });
 
-      const response = await fetch(`${this.baseUrl}/api/order`, {
+      const initData = this.getInitData();
+      console.log('🔑 initData:', initData ? 'present' : 'missing', initData?.substring(0, 50));
+      
+      // initData is optional - web version can create orders without it
+      const url = `${this.baseUrl}/order`;
+      const requestBody: any = {
+        ...orderData,
+      };
+      
+      // Only include initData if present (for Telegram Mini App)
+      if (initData) {
+        requestBody.initData = initData;
+        console.log('✅ Including initData for Telegram Mini App');
+      } else {
+        console.log('🌐 Web version: creating order without initData');
+      }
+      
+      const body = JSON.stringify(requestBody);
+
+      console.log('📤 Sending POST request to:', url);
+      console.log('📦 Request body size:', body.length, 'bytes');
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          initData,
-          ...orderData,
-        }),
+        body,
       });
+
+      console.log('📥 Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({ message: 'Failed to create order' }));
+        console.error('❌ Response error:', error);
         throw new Error(error.message || 'Failed to create order');
       }
 
       const order = await response.json();
+      console.log('✅ Order created successfully:', order.id);
+      
       return {
         id: order.id,
         success: true,
       };
-    } catch (error) {
-      console.error('Failed to create order:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to create order:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
       throw error;
     }
   }

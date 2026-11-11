@@ -6,12 +6,15 @@ interface Order {
   totalPrice: number;
   deliveryPrice: number;
   address: string;
+  name?: string;
+  phone?: string;
   status: string;
   createdAt: string;
   user: {
     firstName: string;
     lastName: string;
     username: string;
+    phone?: string;
   };
 }
 
@@ -19,6 +22,7 @@ export default function Orders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -26,7 +30,7 @@ export default function Orders() {
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get(`/orders?page=${page}&limit=20`);
+      const response = await api.get(`/orders/admin?page=${page}&limit=20`);
       setOrders(response.data.data);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -41,6 +45,22 @@ export default function Orders() {
       fetchOrders();
     } catch (error) {
       console.error('Failed to update order:', error);
+    }
+  };
+
+  const deleteOrder = async (id: number) => {
+    const confirmed = window.confirm(`Удалить заказ #${id}? Это действие нельзя отменить.`);
+    if (!confirmed) return;
+
+    setDeletingOrderId(id);
+    try {
+      await api.delete(`/orders/${id}`);
+      setOrders((prev) => prev.filter((order) => order.id !== id));
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      alert('Не удалось удалить заказ. Попробуйте еще раз.');
+    } finally {
+      setDeletingOrderId(null);
     }
   };
 
@@ -94,13 +114,21 @@ export default function Orders() {
                   <p className="text-sm text-muted-foreground">
                     {order.user.firstName} {order.user.lastName} (@{order.user.username})
                   </p>
+                  {(order.phone || order.user.phone) && (
+                    <p className="text-sm text-muted-foreground">
+                      📞 {order.phone || order.user.phone}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">{order.address}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="font-bold">{order.totalPrice.toLocaleString()} ₽</p>
+                    <p className="font-bold">{(order.totalPrice + order.deliveryPrice).toLocaleString()} ₽</p>
                     <p className="text-sm text-muted-foreground">
-                      Доставка: {order.deliveryPrice} ₽
+                      Товары: {order.totalPrice.toLocaleString()} ₽
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Доставка: {order.deliveryPrice === 0 ? 'Бесплатно' : `${order.deliveryPrice.toLocaleString()} ₽`}
                     </p>
                   </div>
                   <select
@@ -112,6 +140,14 @@ export default function Orders() {
                     <option value="processing">В обработке</option>
                     <option value="delivered">Доставлен</option>
                   </select>
+                  <button
+                    type="button"
+                    onClick={() => deleteOrder(order.id)}
+                    disabled={deletingOrderId === order.id}
+                    className="px-3 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingOrderId === order.id ? 'Удаление...' : 'Удалить'}
+                  </button>
                 </div>
               </div>
             ))

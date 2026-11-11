@@ -22,14 +22,16 @@ const ProductCard = ({ image, title, volume, description, price, onBuy, delay = 
     className="glass-card rounded-2xl overflow-hidden group cursor-pointer border border-border/50 hover:border-primary/30 transition-colors duration-300"
     style={{ boxShadow: "inset 0 1px 0 0 hsla(0,0%,100%,0.06)" }}
   >
-    <div className="relative p-8 flex justify-center bg-gradient-to-b from-secondary/60 to-transparent">
+    <div className="relative p-4 flex justify-center bg-gradient-to-b from-secondary/60 to-transparent">
+      <div className="w-full h-52 sm:h-56 rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
       <motion.img
         src={image}
         alt={title}
-        className="w-36 h-52 object-contain drop-shadow-lg"
+        className="max-w-full max-h-full w-auto h-auto object-contain drop-shadow-lg"
         whileHover={{ scale: 1.08, rotate: 1 }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
       />
+      </div>
     </div>
 
     <div className="p-6">
