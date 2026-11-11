@@ -143,18 +143,18 @@ export class OrdersService {
 
     console.log('✅ Order created:', order.id);
 
-    // Send notification to manager
-    try {
-      await this.telegramService.sendOrderNotification({
+    // Notify the manager in the background: Telegram goes through a proxy and can
+    // take several seconds, the customer should not wait for it.
+    // sendOrderNotification logs its own success or failure.
+    this.telegramService
+      .sendOrderNotification({
         ...order,
         gift,
         telegramUsername: telegramUsername || null,
+      })
+      .catch((error: any) => {
+        console.error('⚠️ Failed to send notification:', error?.message);
       });
-      console.log('✅ Order notification sent');
-    } catch (error: any) {
-      console.error('⚠️ Failed to send notification:', error.message);
-      // Don't fail order creation if notification fails
-    }
 
     return {
       ...order,
