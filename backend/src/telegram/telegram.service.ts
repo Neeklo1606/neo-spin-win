@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Telegraf } from 'telegraf';
+import { SocksProxyAgent } from 'socks-proxy-agent';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BotSettingsService } from '../bot-settings/bot-settings.service';
@@ -20,7 +21,13 @@ export class TelegramService implements OnModuleInit {
       this.configService.get<string>('TELEGRAM_BOT_TOKEN') ||
       process.env.TELEGRAM_BOT_TOKEN;
     if (token) {
-      this.bot = new Telegraf(token);
+      // api.telegram.org is not reachable directly from the production host,
+      // so bot traffic can go through a proxy, e.g. TELEGRAM_PROXY_URL=socks5h://127.0.0.1:9050
+      const proxyUrl =
+        this.configService.get<string>('TELEGRAM_PROXY_URL') || process.env.TELEGRAM_PROXY_URL;
+      const agent = proxyUrl ? new SocksProxyAgent(proxyUrl) : undefined;
+      this.bot = new Telegraf(token, agent ? { telegram: { agent } } : {});
+      if (agent) console.log('🌐 Telegram bot traffic goes through proxy');
     }
   }
 
