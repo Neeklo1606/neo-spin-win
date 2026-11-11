@@ -7,7 +7,6 @@ import {
   Delete,
   Param,
   UnauthorizedException,
-  Headers,
   Patch,
   UseGuards,
   UseInterceptors,
@@ -146,81 +145,45 @@ export class ApiController {
   async getUserOrders(
     @Query('initData') initData: string,
     @Query('phone') phone: string,
-    @Query('telegramId') telegramId: string,
-    @Headers('x-telegram-id') telegramIdHeader: string,
   ) {
-    // Get telegramId from header or query (header has priority)
-    const finalTelegramId = telegramIdHeader || telegramId;
-    
-    console.log('📥 GET /api/orders called:', { 
-      hasInitData: !!initData, 
-      phone, 
-      telegramId: finalTelegramId,
-      telegramIdFromHeader: telegramIdHeader,
-    });
-
+    // A bare telegramId (query or x-telegram-id header) is NOT trusted any more:
+    // anyone could pass someone else's id. Mini App must send signed initData.
     let user = null;
+    let verified = false;
 
-    // Priority 1: telegramId from header or query (for MiniApp)
-    if (finalTelegramId) {
-      console.log('🔍 Searching by telegramId:', finalTelegramId);
-      user = await this.usersService.findByTelegramId(finalTelegramId);
-      if (user) {
-        console.log('✅ User found by telegramId:', user.id);
-      } else {
-        console.log('⚠️ User not found by telegramId:', finalTelegramId);
-      }
-    }
-    // Priority 2: initData (legacy MiniApp support)
-    else if (initData) {
+    if (initData) {
       try {
         const telegramUser = this.telegramValidator.validateInitData(initData);
-        console.log('✅ Telegram user validated for orders:', telegramUser.id);
         user = await this.usersService.findByTelegramId(telegramUser.id.toString());
-        if (user) {
-          console.log('✅ User found by initData:', user.id);
-        } else {
-          console.log('⚠️ User not found for telegramId:', telegramUser.id);
-        }
+        verified = true;
       } catch (error: any) {
-        console.error('❌ Error validating initData:', error.message);
-        // Don't throw, try phone fallback
+        console.error('❌ Invalid initData for /api/orders:', error.message);
       }
     }
-    // Priority 3: phone (for WEB)
+
+    // Web profile: lookup by the phone the visitor ordered with. The phone is not
+    // proof of identity, so personal details are stripped from the response below.
     if (!user && phone) {
-      console.log('🔍 Searching by phone:', phone);
-      user = await this.prisma.user.findFirst({
-        where: { phone },
-      });
-      if (user) {
-        console.log('✅ User found by phone:', user.id);
-      } else {
-        console.log('⚠️ User not found by phone:', phone);
-      }
+      user = await this.prisma.user.findFirst({ where: { phone } });
     }
 
     if (!user) {
-      console.log('⚠️ No user found, returning empty orders');
       return { data: [], total: 0 };
     }
 
-    console.log('👤 User found:', user.id);
-    
     const orders = await this.prisma.order.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
     });
-    
-    console.log('📦 Found orders:', orders.length);
-    
-    // Parse items from JSON string to array for each order
-    const ordersWithParsedItems = orders.map(order => ({
-      ...order,
-      items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items,
-    }));
-    
-    return { data: ordersWithParsedItems, total: ordersWithParsedItems.length };
+
+    const data = orders.map((order) => {
+      const items = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+      if (verified) return { ...order, items };
+      const { address, name, phone: _phone, telegramUsername, ...rest } = order as any;
+      return { ...rest, items };
+    });
+
+    return { data, total: data.length };
   }
 
   @Post('order')

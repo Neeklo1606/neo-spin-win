@@ -239,27 +239,8 @@ export default function BotSettings() {
           />
         </div>
 
-        {/* Order Template */}
-        <div>
-          <label className="block text-sm font-medium mb-2">Шаблон сообщения заказа</label>
-          <textarea
-            value={formData.orderTemplate || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, orderTemplate: e.target.value }))}
-            className="w-full bg-secondary rounded-lg px-4 py-3 text-foreground border border-border font-mono text-sm"
-            rows={10}
-            placeholder={`Новый заказ!
-Товар: {product}
-Тип: {type}
-Кол-во: {quantity}
-Адрес: {address}
-Имя: {name}
-Телефон: {phone}
-Сумма: {total} ₽`}
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            Используйте переменные: {'{product}'}, {'{type}'}, {'{quantity}'}, {'{address}'}, {'{name}'}, {'{phone}'}, {'{total}'}
-          </p>
-        </div>
+        {/* The order message format is fixed in backend/src/telegram/telegram.service.ts;
+            the old "order template" field was never used, so it is not shown. */}
 
         {/* Submit Button */}
         <div className="flex justify-end pt-4 border-t border-border">

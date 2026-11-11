@@ -48,9 +48,14 @@ const ProductSection = () => {
     }
   };
 
-  // Strict filter for accessories visibility (requested)
-  const accessoryProducts = products.filter((p) => p.category === "accessories");
-  const n2oProducts = products.filter((p) => p.category !== "accessories");
+  // A product is an accessory if the admin picked the "Аксессуар" type
+  // or typed the category in English or Russian.
+  const isAccessory = (p: { category?: string | null; productType?: string | null }) => {
+    const category = (p.category || "").trim().toLowerCase();
+    return p.productType === "accessory" || category === "accessories" || category === "аксессуары";
+  };
+  const accessoryProducts = products.filter(isAccessory);
+  const n2oProducts = products.filter((p) => !isAccessory(p));
   const selectedN2OProduct = n2oProducts.find((p) => p.id === selectedN2OProductId) || n2oProducts[0] || null;
 
   const getCurrentPrice = (): number => {

@@ -82,7 +82,9 @@ class ApiService {
 
       const response = await fetch(`${this.baseUrl}/user?initData=${encodeURIComponent(initData)}`);
       if (!response.ok) return null;
-      return await response.json();
+      // The API answers with an empty body when the user has not pressed /start yet
+      const text = await response.text();
+      return text ? JSON.parse(text) : null;
     } catch (error) {
       console.error('Failed to fetch user:', error);
       return null;
@@ -91,51 +93,25 @@ class ApiService {
 
   async getUserOrders(phone?: string): Promise<Order[]> {
     try {
-      // MiniApp: use Telegram ID from header
-      const tg = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp : null;
-      const telegramId = tg?.initDataUnsafe?.user?.id;
-      
-      let url = `${this.baseUrl}/orders?`;
+      // Mini App: signed initData proves who the user is. Web: phone from the last order.
+      const initData = this.getInitData();
       const params = new URLSearchParams();
-      
-      if (telegramId) {
-        // MiniApp: send telegramId
-        params.append('telegramId', telegramId.toString());
-        console.log('📱 MiniApp: fetching orders by telegramId:', telegramId);
+      if (initData) {
+        params.append('initData', initData);
       } else if (phone) {
-        // WEB: send phone
         params.append('phone', phone);
-        console.log('🌐 WEB: fetching orders by phone:', phone);
       } else {
-        // Fallback: try initData (legacy)
-        const initData = this.getInitData();
-        if (initData) {
-          params.append('initData', initData);
-          console.log('📱 Legacy: fetching orders by initData');
-        } else {
-          console.log('⚠️ No telegramId or phone provided');
-          return [];
-        }
+        return [];
       }
-      
-      url += params.toString();
-      
-      const headers: HeadersInit = {};
-      if (telegramId) {
-        headers['x-telegram-id'] = telegramId.toString();
-      }
-      
-      const response = await fetch(url, { headers });
+
+      const response = await fetch(`${this.baseUrl}/orders?${params.toString()}`);
       if (!response.ok) {
         console.error('❌ Failed to fetch orders:', response.status, response.statusText);
         return [];
       }
-      
+
       const data = await response.json();
-      // Handle both { data: [...] } and direct array responses
-      const orders = Array.isArray(data) ? data : (data.data || []);
-      console.log('✅ Orders fetched:', orders.length);
-      return orders;
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('❌ Failed to fetch orders:', error);
       return [];

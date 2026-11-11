@@ -236,8 +236,11 @@ const Profile = () => {
     );
   }
 
-  const displayName = user
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Гость'
+  // Inside Telegram fall back to the name Telegram passes, even before the user exists in our DB
+  const tgUser = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp?.initDataUnsafe?.user : null;
+  const nameSource = user || (tgUser ? { firstName: tgUser.first_name, lastName: tgUser.last_name, username: tgUser.username } : null);
+  const displayName = nameSource
+    ? `${nameSource.firstName || ''} ${nameSource.lastName || ''}`.trim() || nameSource.username || 'Гость'
     : 'Гость';
 
   // Get user photo from Telegram Mini App

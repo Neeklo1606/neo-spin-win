@@ -17,8 +17,10 @@ const Checkout = () => {
   const finalTotal = totalPrice + estimatedDeliveryCost - discount;
 
   const [address, setAddress] = useState("");
-  const [name, setName] = useState("");
-  const [telegram, setTelegram] = useState("");
+  // Inside the Telegram Mini App we already know the user's name and @username
+  const tgUser = typeof window !== 'undefined' ? (window as any).Telegram?.WebApp?.initDataUnsafe?.user : null;
+  const [name, setName] = useState<string>(tgUser?.first_name || "");
+  const [telegram, setTelegram] = useState<string>(tgUser?.username ? `@${tgUser.username}` : "");
   const [phone, setPhone] = useState("");
   const [telegramError, setTelegramError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

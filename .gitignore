@@ -48,3 +48,4 @@ backend/scripts/upsert-admin.js
 .env
 backend/.env
 vite.preview.local.ts
+vite.local-backend.ts

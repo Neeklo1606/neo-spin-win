@@ -12,6 +12,7 @@ interface DashboardStats {
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [productCount, setProductCount] = useState<number | null>(null);
 
   useEffect(() => {
     fetchStats();
@@ -19,8 +20,12 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/admin/dashboard');
+      const [response, products] = await Promise.all([
+        api.get('/admin/dashboard'),
+        api.get('/products').catch(() => null),
+      ]);
       setStats(response.data);
+      if (products && Array.isArray(products.data)) setProductCount(products.data.length);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
     } finally {
@@ -57,7 +62,7 @@ export default function Dashboard() {
     },
     {
       title: 'Товары',
-      value: '—',
+      value: productCount ?? '—',
       icon: Package,
       color: 'text-purple-400',
     },
